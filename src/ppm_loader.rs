@@ -30,6 +30,31 @@ impl PPMImage {
     }
 }
 
+/// PPMImage struct is returned when the file is read
+pub struct PPMRGBImage {
+    height: usize,
+    width: usize,
+    pixels: Vec<u8>,
+}
+
+/// public methods (accessors) for PPIMage
+impl PPMRGBImage {
+    /// Returns image height
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    /// Returns image width
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    /// Returns image data in RGB format (8bpp per channel)
+    pub fn pixels(&self) -> &Vec<u8> {
+        &self.pixels
+    }
+}
+
 /// Reads specified .ppm file
 /// Returns PPMImage struct containing:
 /// - width: usize
@@ -66,6 +91,22 @@ pub fn read_image_data<R: Read>(image: R) -> Result<PPMImage, TinyppmError> {
     })
 }
 
+pub fn read_rgb_image_data<R: Read>(image: R) -> Result<PPMRGBImage, TinyppmError> {
+    let mut reader = std::io::BufReader::new(image);
+    let (width, height) = read_image_info(&mut reader)?;
+
+    let mut rgb_buffer: Vec<u8> = Vec::with_capacity(width * height * 3);
+    reader.read_to_end(rgb_buffer.as_mut())?;
+
+    Ok(PPMRGBImage{
+        width,
+        height,
+        pixels: rgb_buffer
+    })
+}
+
+
+
 /// converts 24bpp (8 bpp per channel) into 32bpp (ARGB) image data
 fn convert_rgb_to_argb(width: usize, height: usize, rgb_buffer: &[u8]) -> Vec<u32> {
     let mut buffer: Vec<u32> = vec![0; width * height];
@@ -89,6 +130,9 @@ fn read_image_info<R: Read>(reader: &mut BufReader<R>) -> Result<(usize, usize),
 
     let ppm_id = string_buffer.lines().nth(0usize).unwrap();
     if ppm_id != PPM_BINARY_HEADER {
+        println!("foobae");
+        println!("{}", ppm_id);
+        println!("{}", PPM_BINARY_HEADER);
         return Err(TinyppmError::new(TinyppmError::InvalidHeader));
     }
 
